@@ -1,4 +1,4 @@
-# Task 1.1P – Switching ON Lights: Modular Programming Approach
+# Task 1.1P - Switching ON Lights: Modular Programming Approach
 
 ## System Description
 
