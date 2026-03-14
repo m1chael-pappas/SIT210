@@ -1,4 +1,4 @@
-# Task 2.1P — Sending Temperature and Soil Moisture Data to the Web
+# Task 2.1P - Sending Temperature and Soil Moisture Data to the Web
 
 **Unit:** SIT210 Embedded Systems Development
 **Platform:** Arduino Nano 33 IoT + ThingSpeak
