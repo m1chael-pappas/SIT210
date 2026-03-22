@@ -15,7 +15,7 @@ const char *mqttPass = "";
 const char *mqttTopic = "terrarium/light";
 
 // Light threshold in lux
-const float SUNLIGHT_THRESHOLD = 100.0;
+const float SUNLIGHT_THRESHOLD = 500.0; // Adjust based on your environment
 
 BH1750 lightMeter;
 WiFiSSLClient wifiClient;
