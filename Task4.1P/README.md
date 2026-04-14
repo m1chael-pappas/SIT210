@@ -40,7 +40,7 @@ Both inputs use hardware interrupts via `attachInterrupt()` for responsive, non-
 
 ## How It Works
 
-- **PIR Interrupt (RISING on D2):** Sets a flag when motion is detected. The main loop checks the BH1750 light level. If below 50 lux, both LEDs turn on. If bright, lights turn off. Lights auto-off after 30 seconds of no motion.
+- **PIR Interrupt (RISING on D2):** Sets a flag when motion is detected. The main loop checks the BH1750 light level. If below 50 lux, both LEDs turn on. If bright, no action is taken. Lights auto-off after 30 seconds of no motion.
 - **Switch Interrupt (CHANGE on D3):** Toggles both LEDs on or off as a manual backup, regardless of light level.
 
 ## Setup

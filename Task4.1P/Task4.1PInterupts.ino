@@ -115,17 +115,7 @@ void loop()
         }
         else
         {
-            // If lights were turned on by motion and it's now bright, turn them off
-            if (motionActive && lightsOn)
-            {
-                motionActive = false;
-                setLights(false);
-                Serial.println("It is now bright - lights OFF");
-            }
-            else
-            {
-                Serial.println("It is bright - lights not needed.");
-            }
+            Serial.println("It is bright - lights not needed.");
         }
     }
 
