@@ -127,15 +127,15 @@ unsigned long lastWifiAttempt = 0;
 unsigned long lastMqttAttempt = 0;
 unsigned long lastSyncAttempt = 0;
 
-// Sensor heartbeat tracking (Gap 1)
+// Sensor heartbeat tracking 
 uint8_t lastProxReading = 0;
 unsigned long lastProxChangeAt = 0;
 bool sensorFault = false;
 unsigned long lastFaultBeepAt = 0;
 bool faultBeepOn = false;
-bool sensorFaultReported = false;  // so we only publish the fault event once per fault
+bool sensorFaultReported = false;  
 
-// Loop-time monitoring (Gap 2A)
+// Loop-time monitoring 
 unsigned long loopStartedAt = 0;
 unsigned long loopMaxMs = 0;
 unsigned long loopMinMs = 999999;
@@ -144,11 +144,11 @@ unsigned long loopSamples = 0;
 unsigned long lastLoopReportAt = 0;
 
 // Button + network toggle
-bool networkEnabled = false;         // start OFF - user presses button to turn on
+bool networkEnabled = false;         // start OFF 
 int lastButtonState = HIGH;
 unsigned long lastButtonDebounce = 0;
 
-// --- Flash event log (schema v3 adds 'published' flag) ---
+// --- Flash event log  ---
 typedef struct {
   uint8_t  type;
   uint32_t timestamp;
@@ -157,7 +157,7 @@ typedef struct {
   float    latitude;
   float    longitude;
   bool     hasGpsFix;
-  bool     published;       // NEW in v3: true once successfully sent to MQTT
+  bool     published;       
 } BikeEvent;
 
 typedef struct {
@@ -261,7 +261,7 @@ void setup() {
   // MQTT client ID
   mqttClient.setId(BIKE_ID);
 
-  // Boot in the OFF state - everything dark until the user presses the button.
+  // Boot in the OFF state
   if (!networkEnabled) {
     setStripSolid(0, 0, 0);
     noTone(BUZZER_PIN);
@@ -277,9 +277,9 @@ void setup() {
 
 // =================== MAIN LOOP ===================
 void loop() {
-  loopStartedAt = millis();  // Gap 2A: time every loop iteration
+  loopStartedAt = millis(); 
 
-  // --- Sensor / alert path (runs every loop, never blocked by network) ---
+  // --- Sensor / alert path  ---
 
   if (!apdsReady) {
     if (apds.begin()) {
@@ -320,10 +320,10 @@ void loop() {
     updateDisplay(prox);
   }
 
-  // --- Network path (best-effort, non-blocking) ---
+  // --- Network path ---
   manageNetwork();
 
-  recordLoopTime();          // Gap 2A: accumulate stats
+  recordLoopTime();          
 
   delay(50);
 }
@@ -337,8 +337,7 @@ AlertState stateFromProximity(uint8_t prox) {
 }
 
 void applyAlertState(AlertState s) {
-  // Sensor fault has highest priority - even above impact banner.
-  // The "timed alert pattern" promised in the tutor reply.
+  // Sensor fault has highest priority - it trumps all proximity/impact states and has its own distinct alert pattern.
   if (sensorFault) {
     applyFaultAlert();
     return;
@@ -371,14 +370,13 @@ void applyAlertState(AlertState s) {
 }
 
 // Sensor fault fallback: timed beep + magenta strip every 2s
-// Doesn't depend on the sensor — proves the system "doesn't go silent" when it dies.
 void applyFaultAlert() {
   unsigned long now = millis();
   if (now - lastFaultBeepAt >= FAULT_BEEP_INTERVAL_MS / 2) {
     lastFaultBeepAt = now;
     faultBeepOn = !faultBeepOn;
     if (faultBeepOn) {
-      setStripSolid(255, 0, 255);  // magenta = unmissable, distinct from all other states
+      setStripSolid(255, 0, 255);  // magentas
       tone(BUZZER_PIN, 800);
     } else {
       setStripSolid(0, 0, 0);
@@ -454,12 +452,8 @@ void checkImpact() {
   }
 }
 
-// =================== SENSOR HEALTH (Gap 1) ===================
-// Watches the proximity sensor for "stuck" readings - a sensor that's been
-// disconnected or has failed will return the same value forever. If we go
-// SENSOR_STALE_MS without any change, we declare a fault, publish a sensor_fault
-// event so the dashboard knows, and the alert switches to the magenta/beep
-// fallback pattern (so the rider isn't left silent).
+// =================== SENSOR HEALTH  ===================
+// Watches the proximity sensor for "stuck" readings 
 void checkSensorHealth(uint8_t prox) {
   unsigned long now = millis();
 
@@ -470,7 +464,7 @@ void checkSensorHealth(uint8_t prox) {
     return;
   }
 
-  // Any change at all resets the staleness clock - we've seen movement on the sensor.
+  // Any change at all resets the staleness clock
   if (prox != lastProxReading) {
     lastProxReading = prox;
     lastProxChangeAt = now;
@@ -525,13 +519,10 @@ bool publishSensorFault() {
   return true;
 }
 
-// =================== LOOP TIME MONITORING (Gap 2A) ===================
+// =================== LOOP TIME MONITORING ===================
 // Tracks per-loop execution time so we can prove the sensor loop stays fast
 // even when MQTT publishes happen. Prints stats every LOOP_REPORT_INTERVAL_MS.
-//
-// This is the "concrete evidence" for the concurrency / non-blocking design.
-// During the demo I can point at the worst-case loop time and say
-// "even during MQTT publishes, the sensor loop never exceeds Xms".
+
 void recordLoopTime() {
   unsigned long elapsed = millis() - loopStartedAt;
 
@@ -614,7 +605,7 @@ bool publishEvent(const BikeEvent& e) {
   char topic[64];
   snprintf(topic, sizeof(topic), "cycleguard/%s/events", BIKE_ID);
 
-  // Build JSON payload manually - lighter than ArduinoJson.
+  // Build JSON payload manually 
   char payload[256];
   if (e.type == (uint8_t)EVENT_CLOSE_CALL) {
     if (e.hasGpsFix) {
@@ -696,7 +687,7 @@ void syncPendingEvents() {
 void connectWiFi() {
   Serial.print("[wifi] connecting to ");
   Serial.println(WIFI_SSID);
-  // begin() is async on WiFiNINA - it returns the current status.
+  // begin() is async 
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   lastWifiAttempt = millis();
 }
@@ -716,8 +707,7 @@ void connectMQTT() {
 }
 
 void manageNetwork() {
-  // If the user has switched networking off via the button, do nothing.
-  // The sensor loop and flash logging keep running regardless.
+ 
   if (!networkEnabled) {
     return;
   }
@@ -745,7 +735,7 @@ void manageNetwork() {
     return;
   }
 
-  // Both connected - try to sync pending events periodically
+  // Both connected - attempt to sync pending events every SYNC_INTERVAL_MS
   if (now - lastSyncAttempt >= SYNC_INTERVAL_MS) {
     lastSyncAttempt = now;
     syncPendingEvents();
@@ -753,18 +743,14 @@ void manageNetwork() {
 }
 
 // =================== BUTTON / NETWORK TOGGLE ===================
-// A push button on D7 toggles networking on and off. This lets the user
-// (or the demo) take the bike "offline" with one press and back "online"
-// with another. The sensor loop and flash logging are unaffected - only
-// the WiFi/MQTT layer is gated. This makes the offline-first behaviour
-// demonstrable with a single physical interaction.
+
 void checkButton() {
   int reading = digitalRead(BUTTON_PIN);
 
   if (reading != lastButtonState && millis() - lastButtonDebounce > BUTTON_DEBOUNCE_MS) {
     lastButtonDebounce = millis();
 
-    // Trigger on press (button connects D7 to GND, so LOW = pressed)
+    // Trigger on press 
     if (reading == LOW) {
       setNetworkEnabled(!networkEnabled);
     }
