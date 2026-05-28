@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>CycleGuard Hub</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { margin-bottom: 0; }
+    .subtitle { color: #666; margin-top: 0.25rem; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .stat { background: #f4f4f4; padding: 1rem; border-radius: 8px; }
+    .stat .label { font-size: 0.85rem; color: #666; }
+    .stat .value { font-size: 1.8rem; font-weight: bold; }
+    .fault-banner { background: #fef3c7; border-left: 4px solid #d97706; padding: 1rem; margin: 1rem 0; border-radius: 4px; }
+    .fault-banner h3 { margin: 0 0 0.25rem; color: #92400e; }
+    .fault-banner p { margin: 0; color: #78350f; font-size: 0.9rem; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 0.5rem; text-align: left; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+    th { background: #fafafa; }
+    .close_call { color: #d97706; }
+    .impact { color: #dc2626; font-weight: bold; }
+    .sensor_fault { color: #92400e; background: #fef3c7; }
+    .hello { color: #999; }
+  </style>
+</head>
+<body>
+  <h1>CycleGuard Hub</h1>
+  <p class="subtitle">Cyclist safety incident dashboard</p>
+
+  <div id="fault-banner-container"></div>
+
+  <div class="stats" id="stats"></div>
+
+  <h2>Recent events</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Received</th>
+        <th>Bike</th>
+        <th>Type</th>
+        <th>Peak prox</th>
+        <th>Impact (g)</th>
+        <th>Location</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody id="events"></tbody>
+  </table>
+
+<script>
+async function refresh() {
+  const [statsRes, eventsRes] = await Promise.all([
+    fetch('/api/stats'),
+    fetch('/api/events'),
+  ]);
+  const stats = await statsRes.json();
+  const events = await eventsRes.json();
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="label">Total events</div><div class="value">${stats.totals.total ?? 0}</div></div>
+    <div class="stat"><div class="label">Close calls</div><div class="value">${stats.totals.close_calls ?? 0}</div></div>
+    <div class="stat"><div class="label">Impacts</div><div class="value">${stats.totals.impacts ?? 0}</div></div>
+    <div class="stat"><div class="label">Sensor faults</div><div class="value">${stats.totals.faults ?? 0}</div></div>
+    <div class="stat"><div class="label">Queue depth</div><div class="value">${stats.queue_depth}</div></div>
+  `;
+
+  // Render fault banner if present
+  const bannerEl = document.getElementById('fault-banner-container');
+  if (stats.latest_fault) {
+    bannerEl.innerHTML = `
+      <div class="fault-banner">
+        <h3>⚠ Sensor fault on ${stats.latest_fault.bike_id}</h3>
+        <p>Sensor: ${stats.latest_fault.sensor ?? 'unknown'} · stuck at value ${stats.latest_fault.stuck_at ?? '?'} · reported ${stats.latest_fault.received_at}</p>
+      </div>
+    `;
+  } else {
+    bannerEl.innerHTML = '';
+  }
+
+  document.getElementById('events').innerHTML = events.map(e => `
+    <tr class="${e.event_type}">
+      <td>${e.received_at}</td>
+      <td>${e.bike_id}</td>
+      <td>${e.event_type}</td>
+      <td>${e.peak_proximity ?? '—'}</td>
+      <td>${e.impact_g ? e.impact_g.toFixed(2) : '—'}</td>
+      <td>${e.has_gps_fix ? e.latitude.toFixed(4) + ', ' + e.longitude.toFixed(4) : '—'}</td>
+      <td>${e.event_type === 'sensor_fault' ? (e.sensor + ' stuck at ' + e.stuck_at) : ''}</td>
+    </tr>
+  `).join('');
+}
+
+refresh();
+setInterval(refresh, 2000);
+</script>
+</body>
+</html>
